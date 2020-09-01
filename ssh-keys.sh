@@ -470,8 +470,17 @@ function ssh_keys_password {
 function start_agent {
   ssh_cmd="ssh-agent -a $ssh_agent_socket -s"
 
+  # Determine number of running agents
+  running_agents=$(pgrep -cfx "$ssh_cmd" 2>/dev/null)
+  if [[ $? -ne 0 ]]; then
+    if [[ -d /cygdrive ]]; then
+      running_agents=$(ps | grep [s]sh-agent | wc -l)
+    else
+      running_agents=$(ps -f | grep "$ssh_cmd" | grep -v grep | wc -l)
+    fi
+  fi
+
   # Delete the socket file if ssh-agent is not running
-  running_agents=$(ps -x | grep "$ssh_cmd" | grep -v grep | wc -l)
   if [[ -S $ssh_agent_socket ]] && [[ $running_agents -eq 0 ]]; then
     rm $ssh_agent_socket
   fi
